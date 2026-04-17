@@ -21,6 +21,7 @@ import uiPickMoney
 import uiCommon
 import uiGuild
 import guild
+import chrmgr
 
 SHOW_ONLY_ACTIVE_SKILL = False
 SHOW_LIMIT_SUPPORT_SKILL_LIST = []
@@ -162,6 +163,9 @@ class CharacterWindow(ui.ScriptWindow):
 			"STR-" : "/stat- st",
 			"DEX-" : "/stat- dx",
 		}
+
+	def __DummyEvent(self):
+		pass
 
 	def __del__(self):
 		ui.ScriptWindow.__del__(self)
@@ -453,7 +457,7 @@ class CharacterWindow(ui.ScriptWindow):
 			self.selectedTitleName = None
 
 		self.selectedTitleDescList = []
-		for i in xrange(1, 4):
+		for i in xrange(1, 6):
 			try:
 				self.selectedTitleDescList.append(self.GetChild("SelectedTitleDesc%d" % i))
 			except:
@@ -558,6 +562,29 @@ class CharacterWindow(ui.ScriptWindow):
 		if self.emotionToolTip:
 			self.emotionToolTip.HideToolTip()
 
+	def __LoadTitleHeaderIcons(self):
+		parent = self.pageDict["TITLES"]
+
+		self.titleEyeIcon = ui.Button()
+		self.titleEyeIcon.SetParent(parent)
+		self.titleEyeIcon.SetPosition(18, 44)
+		self.titleEyeIcon.SetUpVisual("d:/ymir work/ui/title/eye_01.tga")
+		self.titleEyeIcon.SetOverVisual("d:/ymir work/ui/title/eye_02.tga")
+		self.titleEyeIcon.SetDownVisual("d:/ymir work/ui/title/eye_01.tga")
+		self.titleEyeIcon.SetEvent(ui.__mem_func__(self.__DummyEvent))
+		self.titleEyeIcon.SetToolTipText("Jeśli dasz tutaj haczyk, tytul bedzie wyswietlany", 80, -19)
+		self.titleEyeIcon.Show()
+
+		self.titleSearchIcon = ui.Button()
+		self.titleSearchIcon.SetParent(parent)
+		self.titleSearchIcon.SetPosition(43, 44)
+		self.titleSearchIcon.SetUpVisual("d:/ymir work/ui/title/search_01.tga")
+		self.titleSearchIcon.SetOverVisual("d:/ymir work/ui/title/search_02.tga")
+		self.titleSearchIcon.SetDownVisual("d:/ymir work/ui/title/search_01.tga")
+		self.titleSearchIcon.SetEvent(ui.__mem_func__(self.__DummyEvent))
+		self.titleSearchIcon.SetToolTipText("Jeśli dasz tutaj haczyk, zostania aktywowany efekt tytułu.", 80, -19)
+		self.titleSearchIcon.Show()
+
 	def __BindEvent(self):
 		for i in xrange(len(self.skillGroupButton)):
 			self.skillGroupButton[i].SetEvent(lambda arg=i: self.__SelectSkillGroup(arg))
@@ -579,7 +606,7 @@ class CharacterWindow(ui.ScriptWindow):
 			statusMinusButton.HideToolTip = lambda arg=statusMinusKey: self.__OverOutStatMinusButton()
 
 		for titleBarValue in self.titleBarDict.itervalues():
-			titleBarValue.SetCloseEvent(ui.__mem_func__(self.Hide))
+			titleBarValue.SetCloseEvent(ui.__mem_func__(self.Close))
 
 		for i in xrange(len(self.questRowButtonList)):
 			self.questRowButtonList[i].SetEvent(lambda arg=i: self.__SelectQuestRow(arg))
@@ -611,6 +638,8 @@ class CharacterWindow(ui.ScriptWindow):
 
 			self.__BindObject()
 			print(">>> __BindObject() OK")
+
+			self.__LoadTitleHeaderIcons()
 
 			self.__BindEvent()
 			print(">>> __BindEvent() OK")
@@ -698,25 +727,52 @@ class CharacterWindow(ui.ScriptWindow):
 		else:
 			net.SendChatPacket("/change_memleket %d" % (self.visibleTitleIndex + 1))
 
+	def __SplitTitleDescription(self, text, maxLineLen = 28, maxLines = 5):
+		if not text:
+			return []
+
+		words = text.split()
+		lines = []
+		current = ""
+
+		for word in words:
+			testLine = word
+			if current:
+				testLine = current + " " + word
+
+			if len(testLine) <= maxLineLen:
+				current = testLine
+			else:
+				lines.append(current)
+				current = word
+
+				if len(lines) >= maxLines - 1:
+					break
+
+		if current and len(lines) < maxLines:
+			lines.append(current)
+
+		return lines
+
 	def SetTitleInfo(self, selectedIdx):
 		self.ClearTitleInfo()
 
 		if not self.selectedTitleName:
 			return
 
-		titleName = localeInfo.MEMLEKET_LIST[selectedIdx + 1]
+		realIdx = selectedIdx + 1
+
+		titleName = ""
+		if realIdx < len(localeInfo.MEMLEKET_LIST):
+			titleName = localeInfo.MEMLEKET_LIST[realIdx]
+
 		self.selectedTitleName.SetText(titleName)
 
-		descList = [
-			"To jest przykładowy opis.",
-			"Tu później podepniesz dane z serwera.",
-		]
+		titleDesc = ""
+		if hasattr(localeInfo, "MEMLEKET_DEPICTION") and realIdx < len(localeInfo.MEMLEKET_DEPICTION):
+			titleDesc = localeInfo.MEMLEKET_DEPICTION[realIdx]
 
-		bonusList = [
-			"+1000 HP",
-			"+10 Siły",
-			"+5% na potwory",
-		]
+		descList = self.__SplitTitleDescription(titleDesc, 24, len(self.selectedTitleDescList))
 
 		for i in xrange(len(self.selectedTitleDescList)):
 			if self.selectedTitleDescList[i]:
@@ -724,6 +780,12 @@ class CharacterWindow(ui.ScriptWindow):
 					self.selectedTitleDescList[i].SetText(descList[i])
 				else:
 					self.selectedTitleDescList[i].SetText("")
+
+		bonusList = [
+			"+%d%% Srednie obrazenia" % realIdx,
+			"+%d HP" % (realIdx * 100),
+			"+%d%% Krytyk" % realIdx,
+		]
 
 		for i in xrange(len(self.selectedTitleBonusList)):
 			if self.selectedTitleBonusList[i]:
@@ -755,8 +817,21 @@ class CharacterWindow(ui.ScriptWindow):
 		if self.titleScrollBar:
 			self.titleScrollBar.SetPos(0.0)
 
+		try:
+			currentMemleket = chrmgr.GetMainCharacterMemleket()
+		except:
+			currentMemleket = -1
+
+		if currentMemleket < 0:
+			self.visibleTitleIndex = -1
+		else:
+			self.visibleTitleIndex = currentMemleket - 1
+
 		if len(self.titleItemList) > 0:
-			self.SelectTitleFromList(0)
+			if self.visibleTitleIndex >= 0 and self.visibleTitleIndex < len(self.titleItemList):
+				self.SelectTitleFromList(self.visibleTitleIndex)
+			else:
+				self.SelectTitleFromList(0)
 
 		self.RefreshTitleMarks()
 
