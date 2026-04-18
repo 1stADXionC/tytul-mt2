@@ -231,6 +231,7 @@ ACMD (do_clear_affect);
 #ifdef ENABLE_MEMLEKET_SYSTEM
 ACMD (do_load_memleket);
 ACMD (do_change_memleket);
+ACMD (do_change_memleket_bonus);
 #endif
 
 struct command_info cmd_info[] =
@@ -500,6 +501,7 @@ struct command_info cmd_info[] =
 #ifdef ENABLE_MEMLEKET_SYSTEM
 	{ "load_memleket",			do_load_memleket,			0,					POS_DEAD,		GM_PLAYER		},
 	{ "change_memleket",		do_change_memleket,			0,					POS_DEAD,		GM_PLAYER		},
+	{ "change_memleket_bonus",	do_change_memleket_bonus,	0,					POS_DEAD,		GM_PLAYER		},
 #endif
 
 	{ "\n",						NULL,						0,					POS_DEAD,		GM_IMPLEMENTOR	}  /* 반드시 이 것이 마지막이어야 한다. */

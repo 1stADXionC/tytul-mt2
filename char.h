@@ -741,6 +741,7 @@ class CHARACTER : public CEntity, public CFSM, public CHorseRider
 #ifdef ENABLE_MEMLEKET_SYSTEM
 	public:
 		int8_t GetMemleket() const { return m_points.bMemleket; }
+		int8_t GetMemleketBonus() const { return m_points.bMemleketBonus; }
 
 		void SetMemleket(int8_t val)
 		{
@@ -748,6 +749,14 @@ class CHARACTER : public CEntity, public CFSM, public CHorseRider
 				val = -1;
 
 			m_points.bMemleket = val;
+			UpdatePacket();
+		}
+		void SetMemleketBonus(int8_t val)
+		{
+			if (val < -1 || val > 2)
+				val = -1;
+
+			m_points.bMemleketBonus = val;
 			UpdatePacket();
 		}
 #endif

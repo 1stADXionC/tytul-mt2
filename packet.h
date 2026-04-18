@@ -248,6 +248,7 @@ enum
 	//HYBRID CRYPT
 #ifdef ENABLE_MEMLEKET_SYSTEM
 	HEADER_GC_MEMLEKET					= 192,
+	HEADER_GC_MEMLEKET_STATE			= 193,
 #endif
 	HEADER_GC_SPECIFIC_EFFECT			= 208,
 	HEADER_GC_DRAGON_SOUL_REFINE		= 209,
@@ -2246,6 +2247,14 @@ typedef struct SPacketGCMemleketInfo
 	WORD	wAffType[3];
 	BYTE	bAffValue[3];
 } TPacketGCMemleketInfo;
+
+typedef struct SPacketGCMemleketState
+{
+	SPacketGCMemleketState() : bHeader(HEADER_GC_MEMLEKET_STATE), bTitle(-1), bBonus(-1) {}
+	BYTE	bHeader;
+	int8_t	bTitle;
+	int8_t	bBonus;
+} TPacketGCMemleketState;
 #endif
 
 #pragma pack()

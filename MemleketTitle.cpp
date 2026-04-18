@@ -11,92 +11,153 @@
 #include "desc.h"
 #include "constants.h"
 
-auto CMemleketTitle::SelectTitle(const int8_t titleIDX, LPCHARACTER ch) -> void {
-    if (!ch || !ch->GetDesc()) { 
-        return; 
-    }
+namespace
+{
+	const CMemleketTitle::TBonusData s_aTitleBonus[3] =
+	{
+		// Tytuł 0
+		{
+			APPLY_NORMAL_HIT_DAMAGE_BONUS, 5,
+			APPLY_MAX_HP, 1000,
+			APPLY_CRITICAL_PCT, 5
+		},
 
-    if (titleIDX < -1) {
-        return;
-    }
+		// Tytuł 1
+		{
+			APPLY_ATT_SPEED, 10,
+			APPLY_MOV_SPEED, 10,
+			APPLY_MAX_SP, 500
+		},
 
-    if (ch->GetMemleket() == titleIDX) {
-        ch->ChatPacket(CHAT_TYPE_INFO, "Już masz ten tytuł!");
-        return;
-    }
-
-    UpdateTitle(ch, titleIDX);
+		// Tytuł 2
+		{
+			APPLY_STR, 12,
+			APPLY_DEX, 12,
+			APPLY_CON, 12
+		}
+	};
 }
 
-auto CMemleketTitle::UpdateTitle(LPCHARACTER ch, const int8_t changeIdx) -> void {
-    if (!ch || !ch->GetDesc()) {
-        return;
-    }
+auto CMemleketTitle::ClearBonusAffects(LPCHARACTER ch) -> void
+{
+	if (!ch)
+		return;
 
-    for (uint16_t i = AFFECT_MEMLEKET1; i <= AFFECT_MEMLEKET3; ++i) {
-        ch->RemoveAffect(i);
-    }
-
-    if (changeIdx == -1) {
-        ch->SetMemleket(-1);
-        ch->ComputePoints();
-        ch->PointsPacket();
-        return;
-    }
-
-    if (changeIdx < 0) {
-        return;
-    }
-
-    int titleStep = changeIdx;
-
-    int srednie = titleStep;      
-    int hp      = titleStep * 100; 
-    int krytyk  = titleStep;      
-
-    ch->AddAffect(
-        AFFECT_MEMLEKET1,
-        aApplyInfo[APPLY_NORMAL_HIT_DAMAGE_BONUS].bPointType,
-        srednie,
-        0,
-        INFINITE_AFFECT_DURATION,
-        0,
-        false
-    );
-
-    ch->AddAffect(
-        AFFECT_MEMLEKET2,
-        aApplyInfo[APPLY_MAX_HP].bPointType,
-        hp,
-        0,
-        INFINITE_AFFECT_DURATION,
-        0,
-        false
-    );
-
-    ch->AddAffect(
-        AFFECT_MEMLEKET3,
-        aApplyInfo[APPLY_CRITICAL_PCT].bPointType,
-        krytyk,
-        0,
-        INFINITE_AFFECT_DURATION,
-        0,
-        false
-    );
-
-    ch->SetMemleket(changeIdx);
-    ch->ComputePoints();
-    ch->PointsPacket();
+	for (uint16_t i = AFFECT_MEMLEKET1; i <= AFFECT_MEMLEKET3; ++i)
+		ch->RemoveAffect(i);
 }
 
-auto CMemleketTitle::SendToClient(LPCHARACTER ch) -> void {
-    if (!ch || !ch->GetDesc()) {
-        return;
-    }
+auto CMemleketTitle::ApplyBonusAffects(LPCHARACTER ch, int8_t bonusIdx) -> void
+{
+	if (!ch)
+		return;
 
-    TPacketGCMemleketInfo titleInfo{};
-    ch->GetDesc()->Packet(&titleInfo, sizeof(TPacketGCMemleketInfo));
+	if (bonusIdx < 0 || bonusIdx > 2)
+		return;
+
+	const TBonusData& bonus = s_aTitleBonus[bonusIdx];
+
+	ch->AddAffect(
+		AFFECT_MEMLEKET1,
+		aApplyInfo[bonus.applyType1].bPointType,
+		bonus.applyValue1,
+		0,
+		INFINITE_AFFECT_DURATION,
+		0,
+		false
+	);
+
+	ch->AddAffect(
+		AFFECT_MEMLEKET2,
+		aApplyInfo[bonus.applyType2].bPointType,
+		bonus.applyValue2,
+		0,
+		INFINITE_AFFECT_DURATION,
+		0,
+		false
+	);
+
+	ch->AddAffect(
+		AFFECT_MEMLEKET3,
+		aApplyInfo[bonus.applyType3].bPointType,
+		bonus.applyValue3,
+		0,
+		INFINITE_AFFECT_DURATION,
+		0,
+		false
+	);
+}
+
+auto CMemleketTitle::SelectTitle(const int8_t titleIDX, LPCHARACTER ch) -> void
+{
+	if (!ch || !ch->GetDesc())
+		return;
+
+	if (titleIDX < -1 || titleIDX > 2)
+		return;
+
+	UpdateTitle(ch, titleIDX);
+	SendToClient(ch);
+}
+
+auto CMemleketTitle::SelectBonus(const int8_t titleIDX, LPCHARACTER ch) -> void
+{
+	if (!ch || !ch->GetDesc())
+		return;
+
+	if (titleIDX < -1 || titleIDX > 2)
+		return;
+
+	UpdateBonus(ch, titleIDX);
+	SendToClient(ch);
+}
+
+auto CMemleketTitle::UpdateTitle(LPCHARACTER ch, const int8_t changeIdx) -> void
+{
+	if (!ch || !ch->GetDesc())
+		return;
+
+	if (changeIdx < -1 || changeIdx > 2)
+		return;
+
+	ch->SetMemleket(changeIdx);
+}
+
+auto CMemleketTitle::UpdateBonus(LPCHARACTER ch, const int8_t changeIdx) -> void
+{
+	if (!ch || !ch->GetDesc())
+		return;
+
+	if (changeIdx < -1 || changeIdx > 2)
+		return;
+
+	ClearBonusAffects(ch);
+	ch->SetMemleketBonus(changeIdx);
+
+	if (changeIdx == -1)
+	{
+		ch->ComputePoints();
+		ch->PointsPacket();
+		return;
+	}
+
+	ApplyBonusAffects(ch, changeIdx);
+
+	ch->ComputePoints();
+	ch->PointsPacket();
+}
+
+auto CMemleketTitle::SendToClient(LPCHARACTER ch) -> void
+{
+	if (!ch || !ch->GetDesc())
+		return;
+
+	TPacketGCMemleketInfo titleInfo{};
+	titleInfo.bHeader = HEADER_GC_MEMLEKET;
+	titleInfo.bTitle = ch->GetMemleket();
+	titleInfo.bBonus = ch->GetMemleketBonus();
+
+	ch->GetDesc()->Packet(&titleInfo, sizeof(TPacketGCMemleketInfo));
 }
 
 #endif
-

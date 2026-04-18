@@ -2225,4 +2225,15 @@ ACMD(do_change_memleket)
 
 	CMemleketTitle::instance().SelectTitle(idx, ch);
 }
+ACMD(do_change_memleket_bonus)
+{
+	char arg1[256];
+	one_argument(argument, arg1, sizeof(arg1));
+
+	if (!*arg1)
+		return;
+
+	const int idx = atoi(arg1);
+	CMemleketTitle::instance().SelectBonus(idx, ch);
+}
 #endif

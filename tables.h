@@ -407,6 +407,7 @@ typedef struct SPlayerTable
 	
 #ifdef ENABLE_MEMLEKET_SYSTEM
 	int8_t	bMemleket;
+	int8_t	bMemleketBonus;
 #endif
 	
 } TPlayerTable;

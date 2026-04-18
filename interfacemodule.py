@@ -45,9 +45,6 @@ import uiScriptLocale
 import event
 import localeInfo
 
-if app.ENABLE_MEMLEKET_SYSTEM:
-	import uimemleket
-
 IsQBHide = 0
 class Interface(object):
 	CHARACTER_STATUS_TAB = 1
@@ -64,9 +61,6 @@ class Interface(object):
 		# ITEM_MALL
 		self.mallPageDlg = None
 		# END_OF_ITEM_MALL
-
-		if app.ENABLE_MEMLEKET_SYSTEM:
-			self.wndMemleket = None
 
 		self.wndWeb = None
 		self.wndTaskBar = None
@@ -248,9 +242,6 @@ class Interface(object):
 		self.dlgRefineNew = uiRefine.RefineDialogNew()
 		self.dlgRefineNew.Hide()
 
-		if app.ENABLE_MEMLEKET_SYSTEM:
-			self.wndMemleket = ui.wndMemleket = uimemleket.MemleketWindow()
-
 	def __MakeHelpWindow(self):
 		self.wndHelp = uiHelp.HelpWindow()
 		self.wndHelp.LoadDialog()
@@ -425,11 +416,6 @@ class Interface(object):
 		if self.wndParty:
 			self.wndParty.Destroy()
 
-		if app.ENABLE_MEMLEKET_SYSTEM:
-			if self.wndMemleket:
-				self.wndMemleket.Destroy()
-				del self.wndMemleket
-
 		if self.wndHelp:
 			self.wndHelp.Destroy()
 
@@ -531,13 +517,6 @@ class Interface(object):
 		self.equipmentDialogDict = {}
 
 		uiChat.DestroyChatInputSetWindow()
-
-	if app.ENABLE_MEMLEKET_SYSTEM:
-		def OpenMemleket(self):
-			if self.wndMemleket.IsShow():
-				self.wndMemleket.Close()
-			else:
-				self.wndMemleket.Open()
 
 	## Skill
 	def OnUseSkill(self, slotIndex, coolTime):

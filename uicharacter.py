@@ -79,6 +79,16 @@ class TitleListItem(ui.Window):
 		self.mark2.SetPackedFontColor(0xffffffff)
 		self.mark2.Show()
 
+		self.mark2Button = ui.Button()
+		self.mark2Button.SetParent(self)
+		self.mark2Button.SetPosition(24, 1)
+		self.mark2Button.SetSize(20, 16)
+		self.mark2Button.SetUpVisual("d:/ymir work/ui/blank.tga")
+		self.mark2Button.SetOverVisual("d:/ymir work/ui/blank.tga")
+		self.mark2Button.SetDownVisual("d:/ymir work/ui/blank.tga")
+		self.mark2Button.SetEvent(lambda : self.parentWnd.ToggleBonusTitle(self.index))
+		self.mark2Button.Show()
+
 		self.name = ui.TextLine()
 		self.name.SetParent(self)
 		self.name.SetPosition(48, 1)
@@ -237,6 +247,7 @@ class CharacterWindow(ui.ScriptWindow):
 		self.selectedTitleIndex = -1
 		self.titleItemList = []
 		self.visibleTitleIndex = -1
+		self.bonusTitleIndex = -1
 
 		self.selectedTitleName = None
 		self.selectedTitleDescList = []
@@ -711,7 +722,7 @@ class CharacterWindow(ui.ScriptWindow):
 	def RefreshTitleMarks(self):
 		for i in xrange(len(self.titleItemList)):
 			leftChecked = (i == self.visibleTitleIndex)
-			rightChecked = False
+			rightChecked = (i == self.bonusTitleIndex)
 			self.titleItemList[i].SetMarks(leftChecked, rightChecked)
 
 	def ToggleVisibleTitle(self, titleIdx):
@@ -726,6 +737,19 @@ class CharacterWindow(ui.ScriptWindow):
 			net.SendChatPacket("/change_memleket -1")
 		else:
 			net.SendChatPacket("/change_memleket %d" % (self.visibleTitleIndex + 1))
+
+	def ToggleBonusTitle(self, titleIdx):
+		if self.bonusTitleIndex == titleIdx:
+			self.bonusTitleIndex = -1
+		else:
+			self.bonusTitleIndex = titleIdx
+
+		self.RefreshTitleMarks()
+
+		if self.bonusTitleIndex == -1:
+			net.SendChatPacket("/change_memleket_bonus -1")
+		else:
+			net.SendChatPacket("/change_memleket_bonus %d" % (self.bonusTitleIndex + 1))
 
 	def __SplitTitleDescription(self, text, maxLineLen = 28, maxLines = 5):
 		if not text:
@@ -781,11 +805,13 @@ class CharacterWindow(ui.ScriptWindow):
 				else:
 					self.selectedTitleDescList[i].SetText("")
 
-		bonusList = [
-			"+%d%% Srednie obrazenia" % realIdx,
-			"+%d HP" % (realIdx * 100),
-			"+%d%% Krytyk" % realIdx,
-		]
+		titleBonusDict = {
+			1 : ["+5% Srednie obrazenia", "+1000 HP", "+5% Krytyk"],
+			2 : ["+10 Szybkosc ataku", "+10 Szybkosc ruchu", "+500 PE"],
+			3 : ["+12 Sila", "+12 Zrecznosc", "+12 Witalnosc"],
+		}
+
+		bonusList = titleBonusDict.get(realIdx, ["", "", ""])
 
 		for i in xrange(len(self.selectedTitleBonusList)):
 			if self.selectedTitleBonusList[i]:
@@ -826,6 +852,16 @@ class CharacterWindow(ui.ScriptWindow):
 			self.visibleTitleIndex = -1
 		else:
 			self.visibleTitleIndex = currentMemleket - 1
+
+		try:
+			currentMemleketBonus = chrmgr.GetMainCharacterMemleketBonus()
+		except:
+			currentMemleketBonus = -1
+
+		if currentMemleketBonus < 0:
+			self.bonusTitleIndex = -1
+		else:
+			self.bonusTitleIndex = currentMemleketBonus - 1
 
 		if len(self.titleItemList) > 0:
 			if self.visibleTitleIndex >= 0 and self.visibleTitleIndex < len(self.titleItemList):
